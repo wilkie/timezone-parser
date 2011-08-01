@@ -4,6 +4,12 @@
 (load "scheme-builder.scm")
 (load "d-builder.scm")
 
+(define string-titlecase
+  (lambda (str)
+    (string-append
+      (string-upcase (substring str 0 1))
+      (string-downcase (substring str 1 (string-length str))))))
+
 (define generate-rule
   (lambda (name)
     (d-generate
@@ -18,6 +24,118 @@
                   (d-else-if (string-append "year <= " (number->string until-year)))))))
           (d-declaration "ret" "int" 0)
           all-rules)))))
+
+(define generate-rule-file
+  (lambda (category)
+    (with-output-to-file (string-append "tzdata/" category ".d")
+      (lambda ()
+        (d-generate
+          (d-module (string-append "tzdata." category)))
+        (newline)
+        (d-generate
+          (d-import "util"))
+        (newline)
+        (d-generate
+          (d-class (string-append (string-titlecase category) "Rules")
+            (d-static)
+            (d-public)
+            (d-body
+              (map
+                generate-rule-class
+                (rule-names category)))))
+        (newline)))))
+
+(define day-of-week-number
+  (lambda (str)
+    (cond ((string=? str "Sun") "0")
+          ((string=? str "Mon") "1")
+          ((string=? str "Tue") "2")
+          ((string=? str "Wed") "3")
+          ((string=? str "Thu") "4")
+          ((string=? str "Fri") "5")
+          ((string=? str "Sat") "6")
+          (else #f))))
+
+(define rule-day-code
+  (lambda (rule is-start)
+    (let ((rule-day-actual (rule-day rule)))
+      (if (number? (string->number rule-day-actual))
+        rule-day-actual
+        (if (>= (string-length rule-day-actual) 5)
+          (let ((day-of-week (substring rule-day-actual 0 3))
+                (day-of-month (substring rule-day-actual 5 (string-length rule-day-actual))))
+            (string-append
+              (if (string=? day-of-week "las")
+                (string-append
+                  "Util.isLast("
+                  (day-of-week-number (substring rule-day-actual 4 (string-length rule-day-actual))))
+                (string-append
+                  "Util.isFirst("
+                  (day-of-week-number day-of-week)
+                  ", "
+                  day-of-month))
+              ", "
+              (if is-start
+                (string (rule-start rule))
+                (string (rule-end rule)))
+              ", "
+              (string (rule-month rule))
+              ")")))))))
+
+(define generate-rule-body
+  (lambda (rule-pair)
+    (d-body 
+      (map
+        (lambda (pair)
+          (d-else-if 
+            (string-append
+              "Util.isAfter(year, month, day, hour, minute, "
+              (string (rule-start (car pair)))
+              ", "
+              (string (rule-month (car pair)))
+              ", "
+              (string (rule-day-code (car pair) #t))
+              ", "
+              (string (rule-when-hour (car pair)))
+              ", "
+              (string (rule-when-minute (car pair)))
+              ") &&\nUtil.isBefore(year, month, day, hour, minute, "
+              (string (rule-end (cadr pair)))
+              ", "
+              (string (rule-month (cadr pair)))
+              ", "
+              (string (rule-day-code (cadr pair) #f))
+              ", "
+              (string (rule-when-hour (cadr pair)))
+              ", "
+              (string (rule-when-minute (cadr pair)))
+              ")")
+            (d-return (rule-seconds (car pair)))))
+        (map
+          (lambda (pair)
+            (list
+              (car rule-pair)
+              pair))
+          (cadr rule-pair))))))
+
+(define generate-rule-class
+  (lambda (rule-name)
+    (let ((pairs (rule-pairs rule-name)))
+      (cons
+        ""
+        (d-class (string-append (d-safe-name (string-titlecase rule-name)) "Rule")
+          (d-static)
+          (d-public)
+          (d-function "savings" "long" "long year, uint month, uint day, uint hour, uint minute"
+            (d-if (string-append "year < " (string (rule-pairs-first-year pairs)))
+              (d-return 0))
+            (d-body
+              (map generate-rule-body pairs))
+            (d-return 0)))))))
+
+(map
+  generate-rule-file
+  (rule-categories))
 
 (with-output-to-file "scheme-tzdata.scm"
   (lambda ()
@@ -56,6 +174,7 @@
     (newline)
     (display (rule-when-second (first (first (rule-pairs "SL")))))
     (newline)
-    (generate-scheme-define "Rules" (rule-pairs "Namibia") "")
+    (generate-scheme-define "Rules" (rule-pairs "Mauritius") "")
     (newline)
+    (generate-scheme-define "Categories" (rule-categories) "")
     (newline)))

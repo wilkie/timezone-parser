@@ -197,11 +197,21 @@
         (map (lambda (x) (string-append "\t" x)) body)
         (list "}")))))
 
+(define d-indent
+  (lambda (amt str)
+    (let ((newstrs (string-split str '(#\newline))))
+      (cons
+        (car newstrs)
+        (map
+          (lambda (str)
+            (string-append (make-string amt #\space) str))
+          (cdr newstrs))))))
+
 (define d-else-if
   (lambda (condition . xtra)
     (let ((body (d-body xtra)))
       (append
-        (list (string-append "else if (" condition ") {"))
+        (d-indent 9 (string-append "else if (" condition ") {"))
         (map (lambda (x) (string-append "\t" x)) body)
         (list "}")))))
 
@@ -255,6 +265,22 @@
   (lambda ()
     '("static:")))
 
+(define d-module
+  (lambda (module-name)
+    (list
+      (string-append
+        "module "
+        module-name
+        ";"))))
+
+(define d-import
+  (lambda (module-name)
+    (list
+      (string-append
+        "import "
+        module-name
+        ";"))))
+
 (define d-class
   (lambda (name . xtra)
     (let ((body (d-body xtra)))
@@ -288,3 +314,16 @@
         (display (car lst))
         (newline)
         (d-generate (cdr lst))))))
+
+(define d-return
+  (lambda (value)
+    (list
+      ""
+      (string-append
+        "return "
+        (d-value value)
+        ";"))))
+
+(define d-safe-name
+  (lambda (name)
+    (string-replace name #\- #\_)))

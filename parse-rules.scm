@@ -93,7 +93,10 @@
 
 (define rule-when-minute
   (lambda (rule)
-    (string->number (second (string-split (rule-when rule) '(#\:))))))
+    (let ((split (string-split (rule-when rule) '(#\:))))
+      (if (= (length split) 1)
+        0
+        (string->number (substring (second split) 0 2))))))
 
 (define rule-when-second
   (lambda (rule)
@@ -151,10 +154,18 @@
 
 (define find-rule-savings
   (lambda (all-rules rule)
-    (filter
-      (lambda (rule-to-check)
-        (terminating-rule? rule rule-to-check))
-      all-rules)))
+    (let ((terminating-rules (filter
+                               (lambda (rule-to-check)
+                                 (terminating-rule? rule rule-to-check))
+                               all-rules)))
+      (if (null? terminating-rules)
+        (filter
+          (lambda (rule-to-check)
+            (and
+              (= (rule-seconds rule-to-check) 0)
+              (= (rule-end rule) (- (rule-start rule-to-check) 1))))
+          all-rules)
+        terminating-rules))))
 
 (define rule-pairs
   (lambda (name)
@@ -178,3 +189,42 @@
         (if (string=? year-b "max")
           year-a
           (min (string->number year-a) (string->number year-b)))))))
+
+(define find-rule-categories
+  (lambda ()
+    (map
+      (lambda (category)
+        (substring category 0 (- (string-length category) 5)))
+      (remove-duplicates
+        (map
+          car
+          (rules))))))
+
+(define rule-names
+  (lambda (category)
+    (remove-duplicates
+      (map
+        rule-name
+        (filter
+          (lambda (rule)
+            (string=? (string-append category ":Rule") (car rule)))
+          (rules))))))
+
+(define rule-categories
+  (let ((names-list '()))
+    (lambda ()
+      (if (null? names-list)
+        (let ((temp (find-rule-categories)))
+          (set! names-list temp)
+          names-list)
+        names-list))))
+
+(define rule-pairs-first-year-impl
+  (lambda (pairs year)
+    (if (null? pairs)
+      year
+      (rule-pairs-first-year-impl (cdr pairs) (min year (rule-start (caar pairs)))))))
+
+(define rule-pairs-first-year
+  (lambda (pairs)
+    (rule-pairs-first-year-impl pairs 3200000)))
