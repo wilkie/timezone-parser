@@ -1,7 +1,7 @@
 (load "parse-util.scm")
 
 (define in_zones
-  (open-input-file "zones"))
+  (open-input-file "tzdata/zones"))
 
 (define zones-parse
   (lambda ()
@@ -22,6 +22,8 @@
           zones-list)
         zones-list))))
 
+; Zones are parsed zone by zone
+; The zone is delimited by a line with only 3 tokens (does not have an end year)
 (define input-zone-entries
   (lambda ()
     (let
@@ -44,7 +46,11 @@
           ((tokens (line-until-comment (string-split line))))
           (let
             ((name (cadr tokens)) (entries (cddr tokens)))
-            (list name (cons entries (input-zone-entries)))))))))
+            (list name 
+              (cons entries 
+                (if (= (length (cddr tokens)) 3)
+                  '()
+                  (input-zone-entries))))))))))
 
 (define zone-name
   (lambda (zone)

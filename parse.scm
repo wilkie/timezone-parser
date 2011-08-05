@@ -6,9 +6,11 @@
 
 (define string-titlecase
   (lambda (str)
-    (string-append
-      (string-upcase (substring str 0 1))
-      (string-downcase (substring str 1 (string-length str))))))
+    (if (= (string-length str) 0)
+      str
+      (string-append
+        (string-upcase (substring str 0 1))
+        (string-downcase (substring str 1 (string-length str)))))))
 
 (define generate-rule
   (lambda (name)
@@ -27,13 +29,13 @@
 
 (define generate-rule-file
   (lambda (category)
-    (with-output-to-file (string-append "tzdata/" category ".d")
+    (with-output-to-file (string-append "tzcode/rules/" category ".d")
       (lambda ()
         (d-generate
-          (d-module (string-append "tzdata." category)))
+          (d-module (string-append "tzcode.rules" category)))
         (newline)
         (d-generate
-          (d-import "util"))
+          (d-import "tzcode.util"))
         (newline)
         (d-generate
           (d-class (string-append (string-titlecase category) "Rules")
@@ -133,9 +135,36 @@
               (map generate-rule-body pairs))
             (d-return 0)))))))
 
+(define generate-zone-file
+  (lambda (zone)
+    (let ((name (zone-name zone))
+          (module-name (d-classify (zone-name zone))))
+      (with-output-to-file (string-append "tzcode/zones/" module-name ".d")
+        (lambda ()
+          (d-generate
+            (d-module (string-append "tzcode.zones." module-name)))
+          (newline)
+          (d-generate
+            (d-import "tzcode.util"))
+          (newline)
+;          (d-generate
+;            (d-class (string-append (string-titlecase category) "Rules")
+;              (d-static)
+;              (d-public)
+;              (d-body
+;                (map
+;                  generate-rule-class
+;                  (rule-names category)))))
+          (newline))))))
+
+
 (map
   generate-rule-file
   (rule-categories))
+
+(map 
+  generate-zone-file
+  (zones))
 
 (with-output-to-file "scheme-tzdata.scm"
   (lambda ()
@@ -174,7 +203,12 @@
     (newline)
     (display (rule-when-second (first (first (rule-pairs "SL")))))
     (newline)
-    (generate-scheme-define "Rules" (rule-pairs "Mauritius") "")
+    (generate-scheme-define "Zones" (zones) "")
+    (display (zone-law-offset (car (zone-laws (car (zones))))))
     (newline)
-    (generate-scheme-define "Categories" (rule-categories) "")
+    (display (zone-law-offset-seconds (car (zone-laws (car (zones))))))
+    (newline)
+    (display (zone-law-offset (car (zone-laws (car (cddddr (zones)))))))
+    (newline)
+    (display (zone-law-offset-seconds (car (zone-laws (car (cddddr (zones)))))))
     (newline)))

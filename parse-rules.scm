@@ -1,7 +1,7 @@
 (load "parse-util.scm")
 
 (define in_rules 
-  (open-input-file "rules"))
+  (open-input-file "tzdata/rules"))
 
 (define rules-parse
   (lambda ()
@@ -64,20 +64,7 @@
 
 (define rule-month
   (lambda (rule)
-    (let ((rule-mth (rule-month-actual rule)))
-      (cond ((string=? rule-mth "Jan")  1)
-            ((string=? rule-mth "Feb")  2)
-            ((string=? rule-mth "Mar")  3)
-            ((string=? rule-mth "Apr")  4)
-            ((string=? rule-mth "May")  5)
-            ((string=? rule-mth "Jun")  6)
-            ((string=? rule-mth "Jul")  7)
-            ((string=? rule-mth "Aug")  8)
-            ((string=? rule-mth "Sep")  9)
-            ((string=? rule-mth "Oct")  10)
-            ((string=? rule-mth "Nov")  11)
-            ((string=? rule-mth "Dec")  12)
-            (else 0)))))
+    (month-string-to-number (rule-month-actual rule))))
 
 (define rule-day
   (lambda (rule)

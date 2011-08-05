@@ -326,4 +326,54 @@
 
 (define d-safe-name
   (lambda (name)
-    (string-replace name #\- #\_)))
+    (string-replace (string-replace name #\- #\_) #\/ #\_)))
+
+(define capitalize-first-letter
+  (lambda (name)
+    (if (null? name)
+      '()
+      (if (char-lower-case? (car name))
+        (cons
+          (char-upcase (car name))
+          (cdr name))
+        name))))
+
+(define d-classify
+  (lambda (name)
+    (list->string (capitalize-first-letter (d-classify-impl (string->list (d-safe-name name)))))))
+
+(define d-classify-impl
+  (lambda (name)
+    (if (<= (length name) 1)
+      name
+      (if (char=? (car name) #\_)
+        (cons
+          (char-upcase (cadr name))
+          (d-classify-impl (cddr name)))
+        (cons
+          (car name)
+          (d-classify-impl (cdr name)))))))
+
+(define trim-underscore
+  (lambda (name)
+    (if (char=? (car name) #\_)
+      (cdr name)
+      name)))
+
+(define d-modulize
+  (lambda (name)
+    (string-downcase (list->string (trim-underscore (d-modulize-impl (string->list (string-downcase (d-safe-name name)))))))))
+
+(define d-modulize-impl
+  (lambda (name)
+    (if (= (length name) 0)
+      '()
+      (if (char-upper-case? (car name))
+        (cons
+          #\_
+          (cons
+            (car name)
+            (d-modulize-impl (cdr name))))
+        (cons
+          (car name)
+          (d-modulize-impl (cdr name)))))))
