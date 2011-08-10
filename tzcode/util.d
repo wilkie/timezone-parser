@@ -1,4 +1,4 @@
-module tzdata.util;
+module tzcode.util;
 
 class Util {
 static:
