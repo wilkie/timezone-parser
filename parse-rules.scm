@@ -32,6 +32,10 @@
           (string-split
             line))))))
 
+(define rule-category
+  (lambda (rule)
+    (substring (car rule) 0 (- (string-length (car rule)) 5))))
+
 (define rule-name
   (lambda (rule)
     (cadr rule)))

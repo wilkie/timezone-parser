@@ -32,7 +32,7 @@
     (with-output-to-file (string-append "tzcode/rules/" category ".d")
       (lambda ()
         (d-generate
-          (d-module (string-append "tzcode.rules" category)))
+          (d-module (string-append "tzcode.rules." category)))
         (newline)
         (d-generate
           (d-import "tzcode.util"))
@@ -58,31 +58,79 @@
           ((string=? str "Sat") "6")
           (else #f))))
 
-(define rule-day-code
-  (lambda (rule is-start)
-    (let ((rule-day-actual (rule-day rule)))
-      (if (number? (string->number rule-day-actual))
-        rule-day-actual
-        (if (>= (string-length rule-day-actual) 5)
-          (let ((day-of-week (substring rule-day-actual 0 3))
-                (day-of-month (substring rule-day-actual 5 (string-length rule-day-actual))))
-            (string-append
-              (if (string=? day-of-week "las")
-                (string-append
-                  "Util.isLast("
-                  (day-of-week-number (substring rule-day-actual 4 (string-length rule-day-actual))))
-                (string-append
-                  "Util.isFirst("
-                  (day-of-week-number day-of-week)
-                  ", "
-                  day-of-month))
-              ", "
-              (if is-start
-                (string (rule-start rule))
-                (string (rule-end rule)))
-              ", "
-              (string (rule-month rule))
-              ")")))))))
+(define day-code
+  (lambda (day month year)
+    (if (number? (string->number day))
+      day
+      (if (>= (string-length day) 5)
+        (let ((day-of-week (substring day 0 3))
+              (day-of-month (substring day 5 (string-length day))))
+          (string-append
+            (if (string=? day-of-week "las")
+              (string-append
+                "Util.isLast("
+                (day-of-week-number (substring day 4 (string-length day))))
+              (string-append
+                "Util.isFirst("
+                (day-of-week-number day-of-week)
+                ", "
+                day-of-month))
+            ", "
+            (string year)
+            ", "
+            (string month)
+            ")"))))))
+
+(define generate-zone-offset-body
+  (lambda (zone-law is-first)
+    (let ((d-func (if is-first d-if d-else-if)))
+      (d-func
+        (string-append
+          "Util.isBefore(year, month, day, hour, minute, "
+          (string (zone-law-year zone-law))
+          ", "
+          (string (zone-law-month zone-law))
+          ", "
+          (string (day-code (zone-law-day zone-law) (zone-law-month zone-law) (zone-law-year zone-law)))
+          ","
+          (string (zone-law-when-hour zone-law))
+          ","
+          (string (zone-law-when-minute zone-law))
+          ")")
+        (d-return (zone-law-offset-seconds zone-law))))))
+
+(define generate-zone-savings-body
+  (lambda (zone-law is-first)
+    (let ((d-func (if is-first d-if d-else-if))
+          (rule (zone-law-rule zone-law)))
+      (d-func
+        (string-append
+          "Util.isBefore(year, month, day, hour, minute, "
+          (string (zone-law-year zone-law))
+          ", "
+          (string (zone-law-month zone-law))
+          ", "
+          (string (day-code (zone-law-day zone-law) (zone-law-month zone-law) (zone-law-year zone-law)))
+          ","
+          (string (zone-law-when-hour zone-law))
+          ","
+          (string (zone-law-when-minute zone-law))
+          ")")
+        (d-return 
+          (if (null? rule)
+            0
+            (d-call 
+              (string-append
+                (d-safe-name (string-titlecase (rule-category rule)))
+                "Rules"
+                "."
+                (d-safe-name (string-titlecase (rule-name rule))) 
+                "Rule.savings")
+              (d-var "year")
+              (d-var "month")
+              (d-var "day")
+              (d-var "hour")
+              (d-var "minute"))))))))
 
 (define generate-rule-body
   (lambda (rule-pair)
@@ -96,7 +144,7 @@
               ", "
               (string (rule-month (car pair)))
               ", "
-              (string (rule-day-code (car pair) #t))
+              (string (day-code (rule-day (car pair)) (rule-month (car pair)) (rule-start (car pair))))
               ", "
               (string (rule-when-hour (car pair)))
               ", "
@@ -106,7 +154,7 @@
               ", "
               (string (rule-month (cadr pair)))
               ", "
-              (string (rule-day-code (cadr pair) #f))
+              (string (day-code (rule-day (car pair)) (rule-month (car pair)) (rule-end (car pair))))
               ", "
               (string (rule-when-hour (cadr pair)))
               ", "
@@ -138,7 +186,7 @@
 (define generate-zone-file
   (lambda (zone)
     (let ((name (zone-name zone))
-          (module-name (d-classify (zone-name zone))))
+          (module-name (d-modulize (zone-name zone))))
       (with-output-to-file (string-append "tzcode/zones/" module-name ".d")
         (lambda ()
           (d-generate
@@ -147,16 +195,27 @@
           (d-generate
             (d-import "tzcode.util"))
           (newline)
-;          (d-generate
-;            (d-class (string-append (string-titlecase category) "Rules")
-;              (d-static)
-;              (d-public)
-;              (d-body
-;                (map
-;                  generate-rule-class
-;                  (rule-names category)))))
+          (map
+            (lambda (category)
+              (d-generate
+                (d-import (string-append "tzcode.rules." category))))
+            (rule-categories))
+          (newline)
+          (d-generate
+            (d-class (string-append (d-classify name) "Zone")
+              (d-static)
+              (d-public)
+              (d-function "savings" "long" "long year, uint month, uint day, uint hour, uint minute"
+                (d-body
+                  (cons
+                    (generate-zone-savings-body (car (zone-laws zone)) #t)
+                    (map (lambda (zone-law) (generate-zone-savings-body zone-law #f)) (cdr (zone-laws zone))))))
+              (d-function "offset" "long" "long year, uint month, uint day, uint hour, uint minute"
+                (d-body
+                  (cons
+                    (generate-zone-offset-body (car (zone-laws zone)) #t)
+                    (map (lambda (zone-law) (generate-zone-offset-body zone-law #f)) (cdr (zone-laws zone))))))))
           (newline))))))
-
 
 (map
   generate-rule-file

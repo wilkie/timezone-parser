@@ -156,14 +156,23 @@
         ";"
         ))))
 
+(define d-var
+  (lambda (name)
+    (list
+      (string-append
+        name
+        ";"))))
+
 (define d-value
   (lambda (val)
-    (if (number? val)
-      (number->string val)
-      (string-append
-        "\""
-        val
-        "\""))))
+    (if (list? val)
+      (d-form-statement val)
+      (if (number? val)
+        (number->string val)
+        (string-append
+          "\""
+          val
+          "\"")))))
 
 (define d-body-trim
   (lambda (lst)
@@ -314,6 +323,15 @@
         (display (car lst))
         (newline)
         (d-generate (cdr lst))))))
+
+(define string-chomp
+  (lambda (str)
+    (substring str 0 (- (string-length str) 1))))
+
+; turn list of lines into single string
+(define d-form-statement
+  (lambda (body)
+    (string-chomp (fold-left string-append "" body))))
 
 (define d-return
   (lambda (value)

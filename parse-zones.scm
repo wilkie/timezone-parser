@@ -96,6 +96,27 @@
   (lambda (zone-law)
     (cadr zone-law)))
 
+(define zone-law-rule
+  (lambda (zone-law)
+    (if (string=? (zone-law-rule-name zone-law) "-")
+      '()
+      (let ((rules (find-rules (zone-law-rule-name zone-law))))
+        (if (= (length rules) 0)
+          '()
+          (first rules))))))
+
+(define zone-rule-names
+  (lambda (zone)
+    (map
+      zone-law-rule-name
+      (zone-laws zone))))
+
+(define zone-rules
+  (lambda (zone)
+    (map
+      find-rules
+      (zone-rule-names zone))))
+
 (define zone-law-human-string
   (lambda (zone-law)
     (caddr zone-law)))
@@ -120,7 +141,7 @@
   (lambda (zone-law)
     (if (>= (length zone-law) 6)
       (cadr (cddddr zone-law))
-      1)))
+      "1")))
 
 (define zone-law-when
   (lambda (zone-law)
