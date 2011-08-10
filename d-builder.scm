@@ -252,6 +252,7 @@
     (let ((body (d-body xtra)))
       (append
         (list
+          ""
           (string-append
             type
             " "
