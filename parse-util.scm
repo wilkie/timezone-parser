@@ -2,6 +2,28 @@
   (lambda (i)
     (+ i 1)))
 
+(define string-null?
+  (lambda (str)
+    (= (string-length str) 0)))
+
+(define read-line-impl
+  (lambda (port)
+    (let ((char-in (read-char port)))
+      (if (eof-object? char-in)
+        '()
+        (if (char=? char-in #\newline)
+          '()
+          (cons
+            char-in
+            (read-line-impl port)))))))
+
+; This code is for other schemes, but this code is slower for schemes
+;   that have a native implementation.
+
+;(define read-line
+;  (lambda (port)
+;    (list->string (read-line-impl port))))
+
 (define (string-split str . rest)
                 ; maxsplit is a positive number
   (define (split-by-whitespace str maxsplit)
@@ -64,7 +86,7 @@
   (lambda (tokens)
     (if (= (length tokens) 0)
       ()
-      (if (string-prefix? "#" (car tokens))
+      (if (char=? #\# (car (string->list (car tokens))))
         ()
         (cons 
           (car tokens)
