@@ -209,12 +209,14 @@
                 (d-body
                   (cons
                     (generate-zone-savings-body (car (zone-laws zone)) #t)
-                    (map (lambda (zone-law) (generate-zone-savings-body zone-law #f)) (cdr (zone-laws zone))))))
+                    (map (lambda (zone-law) (generate-zone-savings-body zone-law #f)) (cdr (zone-laws zone)))))
+                (d-return 0))
               (d-function "offset" "long" "long year, uint month, uint day, uint hour, uint minute"
                 (d-body
                   (cons
                     (generate-zone-offset-body (car (zone-laws zone)) #t)
-                    (map (lambda (zone-law) (generate-zone-offset-body zone-law #f)) (cdr (zone-laws zone))))))))
+                    (map (lambda (zone-law) (generate-zone-offset-body zone-law #f)) (cdr (zone-laws zone)))))
+                (d-return 0))))
           (newline))))))
 
 (map
