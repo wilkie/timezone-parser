@@ -86,7 +86,7 @@
     (let ((d-func (if is-first d-if d-else-if)))
       (d-func
         (string-append
-          "Util.isBefore(year, month, day, hour, minute, "
+          "Util.isStrictlyBefore(year, month, day, hour, minute, "
           (string (zone-law-year zone-law))
           ", "
           (string (zone-law-month zone-law))
@@ -105,7 +105,7 @@
           (rule (zone-law-rule zone-law)))
       (d-func
         (string-append
-          "Util.isBefore(year, month, day, hour, minute, "
+          "Util.isStrictlyBefore(year, month, day, hour, minute, "
           (string (zone-law-year zone-law))
           ", "
           (string (zone-law-month zone-law))
