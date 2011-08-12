@@ -17,7 +17,7 @@
             char-in
             (read-line-impl port)))))))
 
-; This code is for other schemes, but this code is slower for schemes
+; This code is for other schemes, but this code is slower than schemes
 ;   that have a native implementation.
 
 ;(define read-line

@@ -137,10 +137,16 @@
   (lambda (zone-law)
     (month-string-to-number (zone-law-month-actual zone-law))))
 
+(define strip-leading-zero
+  (lambda (str)
+    (if (char=? (car (string->list str)) #\0)
+      (list->string (cdr (string->list str)))
+      str)))
+
 (define zone-law-day
   (lambda (zone-law)
     (if (>= (length zone-law) 6)
-      (cadr (cddddr zone-law))
+      (strip-leading-zero (cadr (cddddr zone-law)))
       "1")))
 
 (define zone-law-when

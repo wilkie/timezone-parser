@@ -86,7 +86,7 @@
     (let ((d-func (if is-first d-if d-else-if)))
       (d-func
         (string-append
-          "Util.isBefore(year, month, day, hour, minute, "
+          "Util.isStrictlyBefore(year, month, day, hour, minute, "
           (string (zone-law-year zone-law))
           ", "
           (string (zone-law-month zone-law))
@@ -105,7 +105,7 @@
           (rule (zone-law-rule zone-law)))
       (d-func
         (string-append
-          "Util.isBefore(year, month, day, hour, minute, "
+          "Util.isStrictlyBefore(year, month, day, hour, minute, "
           (string (zone-law-year zone-law))
           ", "
           (string (zone-law-month zone-law))
@@ -209,12 +209,14 @@
                 (d-body
                   (cons
                     (generate-zone-savings-body (car (zone-laws zone)) #t)
-                    (map (lambda (zone-law) (generate-zone-savings-body zone-law #f)) (cdr (zone-laws zone))))))
+                    (map (lambda (zone-law) (generate-zone-savings-body zone-law #f)) (cdr (zone-laws zone)))))
+                (d-return 0))
               (d-function "offset" "long" "long year, uint month, uint day, uint hour, uint minute"
                 (d-body
                   (cons
                     (generate-zone-offset-body (car (zone-laws zone)) #t)
-                    (map (lambda (zone-law) (generate-zone-offset-body zone-law #f)) (cdr (zone-laws zone))))))))
+                    (map (lambda (zone-law) (generate-zone-offset-body zone-law #f)) (cdr (zone-laws zone)))))
+                (d-return 0))))
           (newline))))))
 
 (map
