@@ -13,10 +13,9 @@ public:
 	}
 
 	bool isAfter (long year, uint month, uint day, 
-			uint hour, uint minute,  
-			long check_year, uint check_month, uint check_day, 
-			uint check_hour, uint check_minute) {
-
+	              uint hour, uint minute,  
+	              long check_year, uint check_month, uint check_day, 
+	              uint check_hour, uint check_minute) {
 		if (year >= check_year) {
 			if (month > check_month) {
 				return true;
@@ -42,10 +41,9 @@ public:
 	}
 
 	bool isBefore (long year, uint month, uint day, 
-			uint hour, uint minute, 
-			long check_year, uint check_month, uint check_day, 
-			uint check_hour, uint check_minute) {
-
+	               uint hour, uint minute, 
+	               long check_year, uint check_month, uint check_day, 
+	               uint check_hour, uint check_minute) {
 		if (year <= check_year) {
 			if (month < check_month) {
 				return true;
