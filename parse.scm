@@ -219,6 +219,73 @@
                 (d-return 0))))
           (newline))))))
 
+(define sorted-zones-impl
+  (lambda ()
+    (sort 
+      (zones)
+      (lambda (zone-a zone-b)
+        (string<? (zone-name zone-a) (zone-name zone-b))))))
+
+(define sorted-zones
+  (let ((zones-list '()))
+    (lambda ()
+      (if (null? zones-list)
+        (let ((temp (sorted-zones-impl)))
+          (set! zones-list temp)
+          zones-list)
+        zones-list))))
+
+(define foo-bar '(("aardvark") ("horse") ("zebra")))
+
+(define build-zone-tree-impl
+  (lambda (lst)
+    (let ((mid (integer-floor (length lst) 2)))
+      (let ((left-hand (take lst mid))
+            (right-hand (take-right lst (- (length lst) mid))))
+        (d-body
+          (list
+            (d-if (d-op== "timezone" (d-value (zone-name (car right-hand))))
+              (d-return #t))
+            (if (null? left-hand)
+              '("")
+              (d-else-if (d-op< "timezone" (d-value (zone-name (car right-hand))))
+                (build-zone-tree-impl left-hand)))
+            (if (<= (length right-hand) 1)
+              '("")
+              (d-else
+                (build-zone-tree-impl (cdr right-hand))))))))))
+
+(define build-zone-tree
+  (lambda ()
+    (build-zone-tree-impl (sorted-zones))))
+
+(define generate-time-zone-file
+  (lambda ()
+    (with-output-to-file "tzcode/time_zone.d"
+      (lambda ()
+        (d-generate
+          (d-module "tzcode.time_zone"))
+        (newline)
+        (d-generate
+          (d-body
+            (map
+              (lambda (zone)
+                (d-import (string-append "tzcode.zones." (d-modulize (zone-name zone)))))
+              (sorted-zones))))
+        (newline)
+        (d-generate
+          (d-class "TimeZone"
+            (d-static)
+            (d-public)
+            ; binary search to find implementations of timezone routines
+            (d-function "funcs" "bool" (string-append
+                                         "char[] timezone,"
+                                         "\n\t           ref long delegate(long, uint, uint, uint, uint) offset,"
+                                         "\n\t           ref long delegate(long, uint, uint, uint, uint) savings")
+              (build-zone-tree)
+              (d-return #f))))
+        (newline)))))
+
 (map
   generate-rule-file
   (rule-categories))
@@ -226,6 +293,8 @@
 (map 
   generate-zone-file
   (zones))
+
+(generate-time-zone-file)
 
 (with-output-to-file "scheme-tzdata.scm"
   (lambda ()

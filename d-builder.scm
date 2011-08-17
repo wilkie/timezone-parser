@@ -167,12 +167,16 @@
   (lambda (val)
     (if (list? val)
       (d-form-statement val)
-      (if (number? val)
-        (number->string val)
-        (string-append
-          "\""
-          val
-          "\"")))))
+      (if (boolean? val)
+        (if val
+          "true"
+          "false")
+        (if (number? val)
+          (number->string val)
+          (string-append
+            "\""
+            val
+            "\";"))))))
 
 (define d-body-trim
   (lambda (lst)
@@ -182,7 +186,7 @@
       ((string=? (first lst) "")
        (d-body-trim (cdr lst)))
       ((string=? (last lst) "")
-       (d-body-trim (drop lst 1)))
+       (d-body-trim (drop-right lst 1)))
       (else lst))))
 
 (define d-body 
@@ -202,7 +206,7 @@
   (lambda (condition . xtra)
     (let ((body (d-body xtra)))
       (append
-        (list "" (string-append "if (" condition ") {"))
+        (list "" (string-append "if (" (d-form-statement condition) ") {"))
         (map (lambda (x) (string-append "\t" x)) body)
         (list "}")))))
 
@@ -220,7 +224,7 @@
   (lambda (condition . xtra)
     (let ((body (d-body xtra)))
       (append
-        (d-indent 9 (string-append "else if (" condition ") {"))
+        (d-indent 9 (string-append "else if (" (d-form-statement condition) ") {"))
         (map (lambda (x) (string-append "\t" x)) body)
         (list "}")))))
 
@@ -230,7 +234,7 @@
       (append
         '("else {")
         (map (lambda (x) (string-append "\t" x)) body)
-        (list "}" "")))))
+        (list "}")))))
 
 (define d-comment
   (lambda xtra
@@ -308,6 +312,11 @@
           body)
         (list "}")))))
 
+(define d-null
+  (lambda ()
+    (list
+      "null;")))
+
 (define d-call
   (lambda (function-name . args)
     (list
@@ -327,12 +336,19 @@
 
 (define string-chomp
   (lambda (str)
-    (substring str 0 (- (string-length str) 1))))
+    (if (= (string-length str) 0)
+      str
+      (if (char=? (last (string->list str)) #\;)
+        (substring str 0 (- (string-length str) 1))
+        str))))
 
 ; turn list of lines into single string
 (define d-form-statement
   (lambda (body)
-    (string-chomp (fold-left string-append "" body))))
+    (string-chomp 
+      (if (list? body)
+        (fold-left string-append "" body)
+        body))))
 
 (define d-return
   (lambda (value)
@@ -396,3 +412,47 @@
         (cons
           (car name)
           (d-modulize-impl (cdr name)))))))
+
+(define d-op>
+  (lambda (a b)
+    (string-append (d-form-statement a) " > " (d-form-statement b) ";")))
+
+(define d-op<
+  (lambda (a b)
+    (string-append (d-form-statement a) " < " (d-form-statement b) ";")))
+
+(define d-op>=
+  (lambda (a b)
+    (string-append (d-form-statement a) " >= " (d-form-statement b) ";")))
+
+(define d-op<=
+  (lambda (a b)
+    (string-append (d-form-statement a) " <= " (d-form-statement b) ";")))
+
+(define d-op-
+  (lambda (a b)
+    (string-append (d-form-statement a) " - " (d-form-statement b) ";")))
+
+(define d-op--
+  (lambda (a)
+    (string-append (d-form-statement a) "--;")))
+
+(define d-op+
+  (lambda (a b)
+    (string-append (d-form-statement a) " + " (d-form-statement b) ";")))
+
+(define d-op++
+  (lambda (a)
+    (string-append (d-form-statement a) "++;")))
+
+(define d-op=
+  (lambda (a b)
+    (string-append (d-form-statement a) " = " (d-form-statement b) ";")))
+
+(define d-op==
+  (lambda (a b)
+    (string-append (d-form-statement a) " == " (d-form-statement b) ";")))
+
+(define d-dereference
+  (lambda (a)
+    (string-append "&" (d-form-statement a) ";")))
