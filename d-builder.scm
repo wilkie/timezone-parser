@@ -455,4 +455,8 @@
 
 (define d-dereference
   (lambda (a)
+    (string-append "*" (d-form-statement a) ";")))
+
+(define d-addressof
+  (lambda (a)
     (string-append "&" (d-form-statement a) ";")))
