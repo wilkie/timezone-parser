@@ -245,6 +245,8 @@
         (d-body
           (list
             (d-if (d-op== "timezone" (d-value (zone-name (car right-hand))))
+              (d-op= "offset" (d-addressof (string-append "Zones." (d-classify (zone-name (car right-hand))) ".offset")))
+              (d-op= "savings" (d-addressof (string-append "Zones." (d-classify (zone-name (car right-hand))) ".savings")))
               (d-return #t))
             (if (null? left-hand)
               '("")
