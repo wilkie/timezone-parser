@@ -245,8 +245,8 @@
         (d-body
           (list
             (d-if (d-op== "timezone" (d-value (zone-name (car right-hand))))
-              (d-op= "offset" (d-addressof (string-append "Zones." (d-classify (zone-name (car right-hand))) ".offset")))
-              (d-op= "savings" (d-addressof (string-append "Zones." (d-classify (zone-name (car right-hand))) ".savings")))
+              (d-op= "offset" (d-addressof (string-append (d-classify (zone-name (car right-hand))) "Zone.offset")))
+              (d-op= "savings" (d-addressof (string-append (d-classify (zone-name (car right-hand))) "Zone.savings")))
               (d-return #t))
             (if (null? left-hand)
               '("")
@@ -282,8 +282,8 @@
             ; binary search to find implementations of timezone routines
             (d-function "funcs" "bool" (string-append
                                          "char[] timezone,"
-                                         "\n\t           ref long delegate(long, uint, uint, uint, uint) offset,"
-                                         "\n\t           ref long delegate(long, uint, uint, uint, uint) savings")
+                                         "\n\t           ref long function(long, uint, uint, uint, uint) offset,"
+                                         "\n\t           ref long function(long, uint, uint, uint, uint) savings")
               (build-zone-tree)
               (d-return #f))))
         (newline)))))
